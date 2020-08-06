@@ -8,7 +8,7 @@ Copyright (c) Steven P. Goldsmith
 All rights reserved.
 """
 
-import os, cv2, numpy, detectbase
+import os, cv2, numpy, detectbase, time
 
 
 class motiondet(detectbase.detectbase):
@@ -33,6 +33,7 @@ class motiondet(detectbase.detectbase):
         logger.info("Image resized to: %dx%d" % (self.frameResizeWidth, self.frameResizeHeight))
         self.motionDetected = False
         self.logger = logger
+        self.motionDetectedStart = None
 
     def contours(self, image):
         """Return contours"""
@@ -99,13 +100,22 @@ class motiondet(detectbase.detectbase):
             self.markRectSize(image, movementLocationsFiltered, (0, 255, 0), 2)
         # Motion start/stop events
         if self.motionDetected:
+            self.logger.info("Motion detected")
             if motionPercent <= self.appConfig.motion['stopThreshold']:
                 self.motionDetected = False
+                self.motionDetectedStart = None
                 # Let listening objects know motion has stopped      
                 self.notifyObservers(event=self.appConfig.motionStop, motionPercent=motionPercent, timestamp=timestamp)
+            else:
+                # check if motion has been active for more than 4 seconds
+                secondsSinceMotionStarted = time.time() - self.motionDetectedStart
+                self.logger.info("Motion first detected %4.1f seconds ago, current motion percent: %4.2f%%" % (secondsSinceMotionStarted, motionPercent))
+                if (secondsSinceMotionStarted > 4.):
+                    # Let listening objects know motion has started      
+                    self.notifyObservers(event=self.appConfig.motionStart, motionPercent=motionPercent, timestamp=timestamp)
+            
         # Threshold to trigger motionStart
         elif motionPercent > self.appConfig.motion['startThreshold'] and motionPercent < self.appConfig.motion['maxChange']:
             self.motionDetected = True
-            # Let listening objects know motion has started      
-            self.notifyObservers(event=self.appConfig.motionStart, motionPercent=motionPercent, timestamp=timestamp)
+            self.motionDetectedStart = time.time()
         return resizeImg, grayImg, bwImg, motionPercent, movementLocationsFiltered

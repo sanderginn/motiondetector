@@ -8,7 +8,8 @@ Copyright (c) Steven P. Goldsmith
 All rights reserved.
 """
 
-import logging, sys, os, traceback, time, datetime, importlib, threading, cv2, numpy, config, motiondet, observer, observable
+import logging, sys, os, traceback, time, datetime, importlib, threading, cv2, numpy, config, motiondet, observer, observable, time
+from playsound import playsound
 
 
 class videoloop(observer.observer, observable.observable):
@@ -175,6 +176,11 @@ class videoloop(observer.observer, observable.observable):
         self.notifyObservers(event=self.appConfig.recordingStart, motionPercent=motionPercent, videoFileName=self.videoFileName, fps=self.fps)
         thread = threading.Thread(target=self.writeFrames)
         thread.start()
+
+    def doorbellSound(self):
+        for i in range(3):
+            playsound('ocean.wav')
+            time.sleep(1)
        
     def observeEvent(self, **kwargs):
         "Handle events"
@@ -184,9 +190,13 @@ class videoloop(observer.observer, observable.observable):
                 # Kick off recordingStart thread
                 recordingStartThread = threading.Thread(target=self.recordingStart, args=(kwargs["timestamp"], kwargs["motionPercent"],))
                 recordingStartThread.start()
-            else:
-                self.logger.error("Cannot start new video while previous video recording")
-                self.motion.motionDetected = False
+
+                playSoundThread = threading.Thread(target=self.doorbellSound)
+                playSoundThread.start()
+                    
+            # else:
+            #     self.logger.error("Cannot start new video while previous video recording")
+            #     self.motion.motionDetected = False
         elif kwargs["event"] == self.appConfig.motionStop:
             self.logger.debug("Motion stop: %4.2f%%" % kwargs["motionPercent"])
             # Exit writeFrames loop
