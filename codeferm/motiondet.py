@@ -110,7 +110,7 @@ class motiondet(detectbase.detectbase):
                 # check if motion has been active for more than 4 seconds
                 secondsSinceMotionStarted = time.time() - self.motionDetectedStart
                 self.logger.info("Motion first detected %4.1f seconds ago, current motion percent: %4.2f%%" % (secondsSinceMotionStarted, motionPercent))
-                if (secondsSinceMotionStarted > 4.):
+                if (secondsSinceMotionStarted > 2.):
                     # Let listening objects know motion has started      
                     self.notifyObservers(event=self.appConfig.motionStart, motionPercent=motionPercent, timestamp=timestamp)
             
